@@ -33,8 +33,8 @@ class UserCreationServices:
     """ Create new user """
 
     @staticmethod
-    def user_register(name, email, password, expires_at):
-        user = User(name=name, email=email, password=password, expires_at=expires_at)
+    def user_register(name, email, password):
+        user = User(name=name, email=email, password=password)
         user.save()
         return user
 
@@ -57,10 +57,7 @@ class UserCreationServices:
             }
         try:
             user = UserCreationServices.user_register(
-                name,
-                email,
-                password_dict["password"],
-                expires_at=datetime.now() + timedelta(minutes=10),
+                name, email, password_dict["password"]
             )
         except Exception as e:
             return {
@@ -98,14 +95,19 @@ class UserAuthServices:
         expired_check = UserAuthServices.user_is_expired(email)
 
         """ User is expired """
-        if expired_check == True and User.objects.get(email=email).is_active:
-            User.objects.get(email=email).delete()
+        if expired_check == True:
+            try:
+                User.objects.get(email=email).delete()
+            except Exception:
+                pass
             return {
-                "data": "User is expired please re register",
+                "data": "User is expired or not exist please re register",
                 "status": HTTP_400_BAD_REQUEST,
             }
         """ User is not expired """
-        User.objects.get(email=email).update(is_active=True)
+        user = User.objects.get(email=email)
+        user.is_active = True
+        user.save()
         is_authenticated = authenticate(username=email, password=password)
         if is_authenticated:
             tokens = AuthBackend.generate_tokens(email=email)
@@ -119,5 +121,10 @@ class UserAuthServices:
 
     @staticmethod
     def user_is_expired(email):
-        user = User.objects.get(email=email)
-        return user.is_expired()
+        try:
+            user = User.objects.get(email=email)
+            if user.is_active:
+                return False
+            return user.is_expired
+        except Exception as e:
+            return True

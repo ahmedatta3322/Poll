@@ -33,6 +33,5 @@ class UserLoginView(views.APIView):
 
 class RefreshTokenView(views.APIView):
     def post(self, request):
-
         response = UserAuthServices.refresh_token(request.data.get("access_token"))
         return Response(data=response, status=HTTP_200_OK)
