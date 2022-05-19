@@ -96,12 +96,16 @@ class UserAuthServices:
     @staticmethod
     def user_login(email, password):
         expired_check = UserAuthServices.user_is_expired(email)
-        if expired_check == True:
+
+        """ User is expired """
+        if expired_check == True and User.objects.get(email=email).is_active:
             User.objects.get(email=email).delete()
             return {
                 "data": "User is expired please re register",
                 "status": HTTP_400_BAD_REQUEST,
             }
+        """ User is not expired """
+        User.objects.get(email=email).update(is_active=True)
         is_authenticated = authenticate(username=email, password=password)
         if is_authenticated:
             tokens = AuthBackend.generate_tokens(email=email)

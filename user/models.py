@@ -13,6 +13,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = "email"
     password = models.CharField(max_length=255)
     expires_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     objects = UserManager()
 
