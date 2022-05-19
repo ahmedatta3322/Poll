@@ -1,16 +1,27 @@
-from ast import Pass
 from django.db import models
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.core.mail import send_mail
-from common.models import BaseModel
 from django.utils import timezone
+from .managers import UserManager
+from django.contrib.auth.models import PermissionsMixin
+
 
 # Create your models here.
-class User(AbstractBaseUser):
+class User(AbstractBaseUser, PermissionsMixin):
     name = models.CharField(max_length=255)
-    email = models.CharField(max_length=255)
+    email = models.CharField(max_length=255, unique=True)
     USERNAME_FIELD = "email"
-    password = models.OneToOneField("user.Password", on_delete=models.CASCADE)
+    password = models.CharField(max_length=255)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    is_staff = models.BooleanField(default=False)
+    objects = UserManager()
+
+    @property
+    def is_expired(self):
+        """
+        Checks if the password has expired
+        """
+        return self.expires_at and self.expires_at < timezone.now()
 
     def email_user(self, subject, message, from_email=None, **kwargs):
         """
@@ -26,13 +37,6 @@ class User(AbstractBaseUser):
         self.password = self.generate_password()
         self.save()
 
-
-class Password(BaseModel):
-
-    password = models.CharField(max_length=255)
-    expires_at = models.DateTimeField(null=True, blank=True)
-    expired = models.BooleanField(default=False)
-
     def generate_password():
         """
         Generates a random password for this user
@@ -42,12 +46,3 @@ class Password(BaseModel):
 
         return "".join(random.choice(string.digits) for i in range(6))
 
-    @property
-    def is_expired(self):
-        """
-        Checks if the password has expired
-        """
-        return self.expires_at and self.expires_at < timezone.now()
-
-    def __str__(self) -> str:
-        return self.password

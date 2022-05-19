@@ -21,12 +21,18 @@ class UserRegisterView(generics.CreateAPIView):
 
 class UserLoginView(views.APIView):
     def post(self, request):
-        UserAuthServices.user_login(
+        response = UserAuthServices.user_login(
             request.data.get("email"), request.data.get("password")
         )
         serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid():
-            return Response(data=serializer.data, status=HTTP_200_OK)
+            return Response(data=response, status=HTTP_200_OK)
         else:
             return Response(data=serializer.errors, status=HTTP_400_BAD_REQUEST)
 
+
+class RefreshTokenView(views.APIView):
+    def post(self, request):
+
+        response = UserAuthServices.refresh_token(request.data.get("access_token"))
+        return Response(data=response, status=HTTP_200_OK)

@@ -1,8 +1,9 @@
-from user.models import User, Password
+from user.models import User
 from django.contrib.auth.hashers import make_password
 from datetime import datetime, timedelta
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from django.contrib.auth import authenticate
+from common.tokens import AuthBackend
 
 
 class UserCreationServices:
@@ -25,18 +26,15 @@ class UserCreationServices:
 
     @staticmethod
     def create_password():
-        password_token = Password.generate_password()
-        password = Password.objects.create(
-            password=make_password(password_token),
-            expires_at=datetime.now() + timedelta(minutes=10),
-        )
+        password_token = User.generate_password()
+        password = make_password(password_token)
         return {"password": password, "password_token": password_token}
 
     """ Create new user """
 
     @staticmethod
-    def user_register(name, email, password):
-        user = User(name=name, email=email, password=password)
+    def user_register(name, email, password, expires_at):
+        user = User(name=name, email=email, password=password, expires_at=expires_at)
         user.save()
         return user
 
@@ -59,7 +57,10 @@ class UserCreationServices:
             }
         try:
             user = UserCreationServices.user_register(
-                name, email, password_dict["password"]
+                name,
+                email,
+                password_dict["password"],
+                expires_at=datetime.now() + timedelta(minutes=10),
             )
         except Exception as e:
             return {
@@ -94,6 +95,13 @@ class UserAuthServices:
 
     @staticmethod
     def user_login(email, password):
-        is_authenticated = authenticate(email=email, password=password)
-        print(is_authenticated)
-        return {"data": "User logged in successfully", "status": HTTP_200_OK}
+        is_authenticated = authenticate(username=email, password=password)
+        if is_authenticated:
+            tokens = AuthBackend.generate_tokens(email=email)
+            return tokens
+        else:
+            return False
+
+    @staticmethod
+    def refresh_token(access_token):
+        return AuthBackend.generate_refresh_token(access_token=access_token)

@@ -9,8 +9,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         read_only_fields = ("password",)
 
 
-class UserLoginSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ("email", "password")
+class UserLoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
 
